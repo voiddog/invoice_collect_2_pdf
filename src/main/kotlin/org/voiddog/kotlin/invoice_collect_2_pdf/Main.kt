@@ -1,8 +1,6 @@
 package org.voiddog.kotlin.invoice_collect_2_pdf
 
-import com.google.zxing.Binarizer
 import com.google.zxing.BinaryBitmap
-import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
@@ -97,14 +95,14 @@ private fun merge2PdfAsImgInPage(
 
   var img = if (pdfFileA == null) null else renderPage(pdfFileA)
   if (img != null) {
-    price += getPriceFromImage(img)
+    price += getPriceFromImage(img, pdfFileA?.path ?: "")
     val imgObj = JPEGFactory.createFromImage(doc, img)
     drawImage2Box(PDRectangle(padding.left, padding.top, width, height), contentStream, imgObj)
   }
 
   img = if (pdfFileB == null) null else renderPage(pdfFileB)
   if (img != null) {
-    price += getPriceFromImage(img)
+    price += getPriceFromImage(img, pdfFileB?.path ?: "")
     val imgObj = JPEGFactory.createFromImage(doc, img)
     drawImage2Box(PDRectangle(padding.left, padding.top + box.height / 2, width, height), contentStream, imgObj)
   }
@@ -114,13 +112,15 @@ private fun merge2PdfAsImgInPage(
   return price
 }
 
-private fun getPriceFromImage(bufferedImage: BufferedImage): Float {
-  val reader = QRCodeReader()
-  val content = reader.decode(BinaryBitmap(HybridBinarizer(BufferedImageLuminanceSource(bufferedImage)))).text
-  val contentList = content.split(",")
-  return try { parseFloat(contentList[4]) } catch (e: Exception) {
-    e.printStackTrace()
-    0.0f
+private fun getPriceFromImage(bufferedImage: BufferedImage, pathFrom: String): Float {
+  return try {
+    val reader = QRCodeReader()
+    val content = reader.decode(BinaryBitmap(HybridBinarizer(BufferedImageLuminanceSource(bufferedImage)))).text
+    val contentList = content.split(",")
+    parseFloat(contentList[4])
+  } catch (e: Exception) {
+    println("Can not get price from: $pathFrom")
+    0f
   }
 }
 
